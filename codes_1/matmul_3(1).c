@@ -15,7 +15,7 @@
 
 void print_matrix(double** T, int rows, int cols);
 
-int main (int argc, char *argv[]) 
+int main (int argc, char *argv[])
 {
    double* a0; //auxiliary 1D for 2D matrix a
    double* b0; //auxiliary 1D for 2D matrix b
@@ -45,12 +45,12 @@ int main (int argc, char *argv[])
    double elapsed;
 
    if (argc == 4){
-      NRA = atoi(argv[1]); 
+      NRA = atoi(argv[1]);
       NCA = atoi(argv[2]);
-      NCB = atoi(argv[3]); 
+      NCB = atoi(argv[3]);
 
       printf("NRA = %d, NCA = %d, NCB = %d\n", NRA, NCA, NCB);
-    }  
+    }
     else{
             printf("Usage: %s NRA NCA NCB \n\n"
                    " NRA: matrix a row length\n"
@@ -69,7 +69,7 @@ int main (int argc, char *argv[])
     for (int i=0; i<NRA; i++){
         a[i] = a0 + i*NCA;
     }
- 
+
     b0 = (double*)malloc(NCA*NCB*sizeof(double));
     b = (double**)malloc(NCA*sizeof(double*));
     for (int i=0; i<NCA; i++){
@@ -108,7 +108,7 @@ int main (int argc, char *argv[])
    for (i=0; i<NRA; i++)
       for (j=0; j<NCB; j++)
          c1[i][j]= 0.0;
-  
+
 //  printf ("matrix a:\n");
 //  print_matrix(a, NRA, NCA);
 //  printf ("matrix b:\n");
@@ -119,11 +119,11 @@ int main (int argc, char *argv[])
   /*** start matrix multiplication (ikj version) ***/
    printf("Starting matrix multiplication - ikj version\n\n");
    gettimeofday(&start_time, 0);
-   for (i=0; i<NRA; i++)    
+   for (i=0; i<NRA; i++)
       for (k=0; k<NCA; k++)
       {
-         ai00 = a[i][k];   
-         for (j=0; j<NCB; j++)  
+         ai00 = a[i][k];
+         for (j=0; j<NCB; j++)
             c1[i][j] +=  ai00 * b[k][j];
 //            c1[i][j] +=  a[i][k] * b[k][j];
       }
@@ -131,14 +131,14 @@ int main (int argc, char *argv[])
    seconds = end_time.tv_sec - start_time.tv_sec;
    microseconds = end_time.tv_usec - start_time.tv_usec;
    elapsed = seconds + 1e-6 * microseconds;
-   printf("ikj version takes %f seconds to finish the computation.\n\n", elapsed); 
+   printf("ikj version takes %f seconds to finish the computation.\n\n", elapsed);
 
 
   /*** start matrix multiplication (ikj version with loop unrolling) ***/
   printf("Starting matrix multiplication - ikj version with loop unrolling\n\n");
   gettimeofday(&start_time, 0);
   //unroll all i, j and k loops with unrolling factor = 4
-  for (i=0; i<NRA0; i+=4) 
+  for (i=0; i<NRA0; i+=4)
   {
     for (k=0; k<NCA0; k+=4)
     {
@@ -146,29 +146,29 @@ int main (int argc, char *argv[])
       ai10 = a[i+1][k]; ai11 = a[i+1][k+1]; ai12 = a[i+1][k+2]; ai13 = a[i+1][k+3];
       ai20 = a[i+2][k]; ai21 = a[i+2][k+1]; ai22 = a[i+2][k+2]; ai23 = a[i+2][k+3];
       ai30 = a[i+3][k]; ai31 = a[i+3][k+1]; ai32 = a[i+3][k+2]; ai33 = a[i+3][k+3];
-      
-      for(j=0; j<NCB0; j+=4) 
-      {  
+
+      for(j=0; j<NCB0; j+=4)
+      {
         bj00 = b[k][j];   bj01 = b[k][j+1];   bj02 = b[k][j+2];   bj03 = b[k][j+3];
         bj10 = b[k+1][j]; bj11 = b[k+1][j+1]; bj12 = b[k+1][j+2]; bj13 = b[k+1][j+3];
         bj20 = b[k+2][j]; bj21 = b[k+2][j+1]; bj22 = b[k+2][j+2]; bj23 = b[k+2][j+3];
         bj30 = b[k+3][j]; bj31 = b[k+3][j+1]; bj32 = b[k+3][j+2]; bj33 = b[k+3][j+3];
- 
+
         c[i][j]   = c[i][j]   + ai00*bj00 + ai01*bj10 + ai02*bj20 + ai03*bj30;
         c[i][j+1] = c[i][j+1] + ai00*bj01 + ai01*bj11 + ai02*bj21 + ai03*bj31;
         c[i][j+2] = c[i][j+2] + ai00*bj02 + ai01*bj12 + ai02*bj22 + ai03*bj32;
         c[i][j+3] = c[i][j+3] + ai00*bj03 + ai01*bj13 + ai02*bj23 + ai03*bj33;
- 
+
         c[i+1][j]   = c[i+1][j]   + ai10*bj00 + ai11*bj10 + ai12*bj20 + ai13*bj30;
         c[i+1][j+1] = c[i+1][j+1] + ai10*bj01 + ai11*bj11 + ai12*bj21 + ai13*bj31;
         c[i+1][j+2] = c[i+1][j+2] + ai10*bj02 + ai11*bj12 + ai12*bj22 + ai13*bj32;
         c[i+1][j+3] = c[i+1][j+3] + ai10*bj03 + ai11*bj13 + ai12*bj23 + ai13*bj33;
- 
+
         c[i+2][j]   = c[i+2][j]   + ai20*bj00 + ai21*bj10 + ai22*bj20 + ai23*bj30;
         c[i+2][j+1] = c[i+2][j+1] + ai20*bj01 + ai21*bj11 + ai22*bj21 + ai23*bj31;
         c[i+2][j+2] = c[i+2][j+2] + ai20*bj02 + ai21*bj12 + ai22*bj22 + ai23*bj32;
         c[i+2][j+3] = c[i+2][j+3] + ai20*bj03 + ai21*bj13 + ai22*bj23 + ai23*bj33;
- 
+
         c[i+3][j]   = c[i+3][j]   + ai30*bj00 + ai31*bj10 + ai32*bj20 + ai33*bj30;
         c[i+3][j+1] = c[i+3][j+1] + ai30*bj01 + ai31*bj11 + ai32*bj21 + ai33*bj31;
         c[i+3][j+2] = c[i+3][j+2] + ai30*bj02 + ai31*bj12 + ai32*bj22 + ai33*bj32;
@@ -179,7 +179,7 @@ int main (int argc, char *argv[])
      //For elelments in remaining j columns
       for (j=NCB0; j<NCB; j++)
       {
-         bj00 = b[k][j]; bj10 = b[k+1][j]; bj20 = b[k+2][j]; bj30 = b[k+3][j]; 
+         bj00 = b[k][j]; bj10 = b[k+1][j]; bj20 = b[k+2][j]; bj30 = b[k+3][j];
          c[i][j]   = c[i][j]   + ai00*bj00 + ai01*bj10 + ai02*bj20 + ai03*bj30;
          c[i+1][j] = c[i+1][j] + ai10*bj00 + ai11*bj10 + ai12*bj20 + ai13*bj30;
          c[i+2][j] = c[i+2][j] + ai20*bj00 + ai21*bj10 + ai22*bj20 + ai23*bj30;
@@ -190,35 +190,35 @@ int main (int argc, char *argv[])
     // for the remaining k
     for (k=NCA0; k<NCA; k++)
     {
-      ai00 = a[i][k]; 
+      ai00 = a[i][k];
       ai10 = a[i+1][k];
       ai20 = a[i+2][k];
       ai30 = a[i+3][k];
-      
-      for(j=0; j<NCB0; j+=4) 
-      {  
+
+      for(j=0; j<NCB0; j+=4)
+      {
         bj00 = b[k][j];
         bj01 = b[k][j+1];
         bj02 = b[k][j+2];
         bj03 = b[k][j+3];
- 
+
         c[i][j]   += ai00*bj00;
         c[i][j+1] += ai00*bj01;
         c[i][j+2] += ai00*bj02;
         c[i][j+3] += ai00*bj03;
- 
+
         c[i+1][j]   += ai10*bj00;
         c[i+1][j+1] += ai10*bj01;
         c[i+1][j+2] += ai10*bj02;
         c[i+1][j+3] += ai10*bj03;
- 
+
         c[i+2][j]   += ai20*bj00;
         c[i+2][j+1] += ai20*bj01;
         c[i+2][j+2] += ai20*bj02;
         c[i+2][j+3] += ai20*bj03;
- 
+
         c[i+3][j]   += ai30*bj00;
-        c[i+3][j+1] += ai30*bj01; 
+        c[i+3][j+1] += ai30*bj01;
         c[i+3][j+2] += ai30*bj02;
         c[i+3][j+3] += ai30*bj03;
       }
@@ -236,8 +236,8 @@ int main (int argc, char *argv[])
   }
 
   //For elements in remaining i rows
-  for (i=NRA0; i<NRA; i++) 
-  { 
+  for (i=NRA0; i<NRA; i++)
+  {
     for (k=0; k<NCA0; k+=4)
     {
       ai00 = a[i][k]; ai01 = a[i][k+1]; ai02 = a[i][k+2]; ai03 = a[i][k+3];
@@ -257,7 +257,7 @@ int main (int argc, char *argv[])
      //For elelments in remaining j columns
       for (j=NCB0; j<NCB; j++)
       {
-         bj00 = b[k][j]; bj10 = b[k+1][j]; bj20 = b[k+2][j]; bj30 = b[k+3][j]; 
+         bj00 = b[k][j]; bj10 = b[k+1][j]; bj20 = b[k+2][j]; bj30 = b[k+3][j];
          c[i][j]   = c[i][j]   + ai00*bj00 + ai01*bj10 + ai02*bj20 + ai03*bj30;
       }
    }
@@ -265,18 +265,18 @@ int main (int argc, char *argv[])
    // for the remaining k
     for (k=NCA0; k<NCA; k++)
     {
-      ai00 = a[i][k]; 
+      ai00 = a[i][k];
      for (j=0; j<NCB; j++)
         c[i][j]   += ai00 * b[k][j];
     }
   }
- 
+
    gettimeofday(&end_time, 0);
    seconds = end_time.tv_sec - start_time.tv_sec;
    microseconds = end_time.tv_usec - start_time.tv_usec;
    elapsed = seconds + 1e-6 * microseconds;
    printf("sequential calculation with loop unrolling time: %f\n\n",elapsed);
- 
+
    //print the result matrix c
 //   printf ("matrix C:\n");
 //   print_matrix(c, NRA, NCB);
