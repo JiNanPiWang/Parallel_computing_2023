@@ -103,6 +103,35 @@ int main(int argc, char *argv[])
     elapsed = seconds + 1e-6 * microseconds;
     printf("The computation takes %f seconds to complete.\n\n", elapsed);
 
+
+
+
+
+
+
+
+    printf("Initializing matrix and vectors\n\n");
+    srand(time(0)); // Seed the random number generator
+    /*** Initialize matrix and vectors ***/
+    // 初始化矩阵
+    for (int i = 0; i < NRA; i++)
+    {
+        for (int k = 0; k < NCA; k++)
+        {
+            a[i][k] = (double) rand() / RAND_MAX;
+        }
+    }
+    // 初始化向量
+    for (int i = 0; i < NCA; i++)
+    {
+        x[i] = (double) rand() / RAND_MAX;
+    }
+
+    for (int i = 0; i < NRA; i++)
+    {
+        b[i] = 0.0;
+    }
+
     // 使用循环展开的方法
     printf("Starting loop unrolling matrix-vector multiplication\n\n");
     gettimeofday(&start_time, 0); // gettimeofday：获取当前的系统时间。
@@ -122,12 +151,16 @@ int main(int argc, char *argv[])
             tmp2 += a[i + 2][k] * x[k];
             tmp3 += a[i + 3][k] * x[k];
         }
+        b[i] = tmp0;
+        b[i + 1] = tmp1;
+        b[i + 2] = tmp2;
+        b[i + 3] = tmp3;
     }
     gettimeofday(&end_time, 0);
     seconds = end_time.tv_sec - start_time.tv_sec;
     microseconds = end_time.tv_usec - start_time.tv_usec;
     elapsed = seconds + 1e-6 * microseconds;
-    printf("The computation takes %f seconds to complete.\n\n", elapsed);
+    printf("The loop unrolling computation takes %f seconds to complete.\n\n", elapsed);
 
 /*** Print results ***/
 // printf("******************************************************\n");
