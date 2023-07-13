@@ -4,5 +4,6 @@ project(codes_2 C)
 set(CMAKE_C_STANDARD 11)
 
 add_executable(codes_2
-            gepp_0.c
+#            gepp_0.c
+        gepp_0_my_type.c
         )

@@ -17,7 +17,7 @@ void print_matrix(double **T, int rows, int cols);
 int main(int agrc, char *agrv[])
 {
     double *a0; //auxiliary 1D for 2D matrix a
-    double **a; //2D matrix for sequential computation
+    double **a, **a_; //2D matrix for sequential computation
 
     int n; //input size
     int i, j, k;
@@ -49,6 +49,7 @@ int main(int agrc, char *agrv[])
         a[i] = a0 + i * n;
     }
 
+    // 使用随机数填充矩阵a的元素。
     srand(time(0));
     for (i = 0; i < n; i++)
     {
@@ -58,15 +59,13 @@ int main(int agrc, char *agrv[])
         }
     }
 
-//    printf("matrix a: \n");
-//    print_matrix(a, n, n);
-
     printf("Starting sequential computation...\n\n");
     /**** Sequential computation *****/
     gettimeofday(&start_time, 0);
     for (i = 0; i < n - 1; i++)
     {
-        //find and record k where |a(k,i)|=𝑚ax|a(j,i)|
+        // find and record k where |a(k,i)|=𝑚ax|a(j,i)|
+        // 对于每一列i，找到绝对值最大的元素a(k,i)，并记录其行号indk。
         amax = a[i][i];
         indk = i;
         for (k = i + 1; k < n; k++)
@@ -78,7 +77,8 @@ int main(int agrc, char *agrv[])
             }
         }
 
-        //exit with a warning that a is singular
+        // exit with a warning that a is singular
+        // 如果最大元素为0，则说明矩阵是奇异的（不可逆），程序退出。
         if (amax == 0)
         {
             printf("matrix is singular!\n");
@@ -86,6 +86,7 @@ int main(int agrc, char *agrv[])
         }
         else if (indk != i) //swap row i and row k
         {
+            // 如果最大元素不在当前行i上，则交换行i和行k。
             for (j = 0; j < n; j++)
             {
                 c = a[i][j];
@@ -94,13 +95,15 @@ int main(int agrc, char *agrv[])
             }
         }
 
-        //store multiplier in place of A(k,i)
+        // store multiplier in place of A(k,i)
+        // 将除第i行外的第i列元素都除以a(i,i)，得到乘数。
         for (k = i + 1; k < n; k++)
         {
             a[k][i] = a[k][i] / a[i][i];
         }
 
-        //subtract multiple of row a(i,:) to zero out a(j,i)
+        // subtract multiple of row a(i,:) to zero out a(j,i)
+        // 将除第i行外的第i列元素都除以a(i,i)，得到乘数。
         for (k = i + 1; k < n; k++)
         {
             c = a[k][i];
