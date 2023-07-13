@@ -11,83 +11,105 @@
 #include <time.h>
 #include <sys/time.h>
 
-void print_matrix(double** T, int rows, int cols);
+void print_matrix(double **T, int rows, int cols);
 
-int main (int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
-   double* a0; //auxiliary 1D for 2D matrix a
-   double* b0; //auxiliary 1D for 2D matrix b
-   double* c0; //auxiliary 1D for 2D matrix c
-   double* c10; //auxiliary 1D for 2D matrix c1
-   double** a; //the two-dimensional input matrix
-   double** b; //the two-dimensional input matrix
-   double** c; //the resulting matrix (ijk version)
-   double** c1; //the resulting matrix (ikj version)
+    double *a0; //auxiliary 1D for 2D matrix a
+    double *b0; //auxiliary 1D for 2D matrix b
+    double *c0; //auxiliary 1D for 2D matrix c
+    double *c10; //auxiliary 1D for 2D matrix c1
+    double **a; //the two-dimensional input matrix
+    double **b; //the two-dimensional input matrix
+    double **c; //the resulting matrix (ijk version)
+    double **c1; //the resulting matrix (ikj version)
 
-   int NRA, NCA, NCB; //matrices lengths
+    int NRA, NCA, NCB; //matrices lengths
 
-   int	tid, nthreads, i, j, k;
-   struct timeval start_time, end_time;
-   long seconds, microseconds;
-   double elapsed;
+    int tid, nthreads, i, j, k;
+    struct timeval start_time, end_time;
+    long seconds, microseconds;
+    double elapsed;
 
-   if (argc == 4){
-      NRA = atoi(argv[1]); 
-      NCA = atoi(argv[2]);
-      NCB = atoi(argv[3]); 
+    if (argc == 4)
+    {
+        NRA = atoi(argv[1]);
+        NCA = atoi(argv[2]);
+        NCB = atoi(argv[3]);
 
-      printf("NRA = %d, NCA = %d, NCB = %d\n\n", NRA, NCA, NCB);
-    }  
-    else{
-            printf("Usage: %s NRA NCA NCB \n\n"
-                   " NRA: matrix a row length\n"
-                   " NCA: matrix a column (or b row) length\n"
-                   " NCB:  matrix b column length\n\n", argv[0]);
+        printf("NRA = %d, NCA = %d, NCB = %d\n\n", NRA, NCA, NCB);
+    }
+    else
+    {
+        printf("Usage: %s NRA NCA NCB \n\n"
+               " NRA: matrix a row length\n"
+               " NCA: matrix a column (or b row) length\n"
+               " NCB:  matrix b column length\n\n", argv[0]);
         return 1;
     }
 
     // Allocate contiguous memory for 2D matrices
-    a0 = (double*)malloc(NRA*NCA*sizeof(double));
-    a = (double**)malloc(NRA*sizeof(double*));
-    for (int i=0; i<NRA; i++){
-        a[i] = a0 + i*NCA;
-    }
- 
-    b0 = (double*)malloc(NCA*NCB*sizeof(double));
-    b = (double**)malloc(NCA*sizeof(double*));
-    for (int i=0; i<NCA; i++){
-        b[i] = &(b0[i*NCB]);
+    a0 = (double *) malloc(NRA * NCA * sizeof(double));
+    a = (double **) malloc(NRA * sizeof(double *));
+    for (int i = 0; i < NRA; i++)
+    {
+        a[i] = a0 + i * NCA;
     }
 
-    c0 = (double*)malloc(NRA*NCB*sizeof(double));
-    c = (double**)malloc(NRA*sizeof(double*));
-    for (int i=0; i<NRA; i++){
-        c[i] = &(c0[i*NCB]);
+    b0 = (double *) malloc(NCA * NCB * sizeof(double));
+    b = (double **) malloc(NCA * sizeof(double *));
+    for (int i = 0; i < NCA; i++)
+    {
+        b[i] = &(b0[i * NCB]);
     }
 
-    c10 = (double*)malloc(NRA*NCB*sizeof(double));
-    c1 = (double**)malloc(NRA*sizeof(double*));
-    for (int i=0; i<NRA; i++){
-        c1[i] = &(c10[i*NCB]);
+    c0 = (double *) malloc(NRA * NCB * sizeof(double));
+    c = (double **) malloc(NRA * sizeof(double *));
+    for (int i = 0; i < NRA; i++)
+    {
+        c[i] = &(c0[i * NCB]);
     }
 
-   printf("Initializing matrices\n\n");
-   srand(time(0)); // Seed the random number generator
-   for (i=0; i<NRA; i++)
-      for (j=0; j<NCA; j++)
-         a[i][j]= (double) rand() / RAND_MAX;
+    c10 = (double *) malloc(NRA * NCB * sizeof(double));
+    c1 = (double **) malloc(NRA * sizeof(double *));
+    for (int i = 0; i < NRA; i++)
+    {
+        c1[i] = &(c10[i * NCB]);
+    }
 
-   for (i=0; i<NCA; i++)
-      for (j=0; j<NCB; j++)
-         b[i][j]= (double) rand() / RAND_MAX;
+    printf("Initializing matrices\n\n");
+    srand(time(0)); // Seed the random number generator
+    for (i = 0; i < NRA; i++)
+    {
+        for (j = 0; j < NCA; j++)
+        {
+            a[i][j] = (double) rand() / RAND_MAX;
+        }
+    }
 
-   for (i=0; i<NRA; i++)
-      for (j=0; j<NCB; j++)
-         c[i][j]= 0.0;
+    for (i = 0; i < NCA; i++)
+    {
+        for (j = 0; j < NCB; j++)
+        {
+            b[i][j] = (double) rand() / RAND_MAX;
+        }
+    }
 
-   for (i=0; i<NRA; i++)
-      for (j=0; j<NCB; j++)
-         c1[i][j]= 0.0;
+    for (i = 0; i < NRA; i++)
+    {
+        for (j = 0; j < NCB; j++)
+        {
+            c[i][j] = 0.0;
+        }
+    }
+
+    for (i = 0; i < NRA; i++)
+    {
+        for (j = 0; j < NCB; j++)
+        {
+            c1[i][j] = 0.0;
+        }
+    }
 
 //  printf ("matrix a:\n");
 //  print_matrix(a, NRA, NCA);
@@ -100,44 +122,52 @@ int main (int argc, char *argv[])
 
 
 
-   printf("Starting matrix multiplication - ijk version\n\n");
-   double ct;
-   gettimeofday(&start_time, 0);
-   for (i=0; i<NRA; i++)    
-      for (j=0; j<NCB; j++)
-      {  
-         ct = c[i][j];
-         for (k=0; k<NCA; k++)   
-            ct +=  a[i][k] * b[k][j];
+    printf("Starting matrix multiplication - ijk version\n\n");
+    double ct;
+    gettimeofday(&start_time, 0);
+    for (i = 0; i < NRA; i++)
+    {
+        for (j = 0; j < NCB; j++)
+        {
+            ct = c[i][j];
+            for (k = 0; k < NCA; k++)
+            {
+                ct += a[i][k] * b[k][j];
+            }
 //            c[i][j] +=  a[i][k] * b[k][j];
-         c[i][j] = ct;
-      }
-   gettimeofday(&end_time, 0);
-   seconds = end_time.tv_sec - start_time.tv_sec;
-   microseconds = end_time.tv_usec - start_time.tv_usec;
-   elapsed = seconds + 1e-6 * microseconds;
-   printf("ijk version takes %f seconds to finish the computation.\n\n", elapsed); 
+            c[i][j] = ct;
+        }
+    }
+    gettimeofday(&end_time, 0);
+    seconds = end_time.tv_sec - start_time.tv_sec;
+    microseconds = end_time.tv_usec - start_time.tv_usec;
+    elapsed = seconds + 1e-6 * microseconds;
+    printf("ijk version takes %f seconds to finish the computation.\n\n", elapsed);
 
 // printf("******************************************************\n");
 // printf("Result Matrix:\n");
 // print_matrix(c, NRA, NCB);
 // printf("******************************************************\n");
 
-   printf("Starting matrix multiplication - ikj version\n\n");
-   double at;
-   gettimeofday(&start_time, 0);
-   for (i=0; i<NRA; i++)    
-      for (k=0; k<NCA; k++)
-      {
-         at = a[i][k];   
-         for (j=0; j<NCB; j++)  
-            c1[i][j] +=  at * b[k][j];
-      }
-   gettimeofday(&end_time, 0);
-   seconds = end_time.tv_sec - start_time.tv_sec;
-   microseconds = end_time.tv_usec - start_time.tv_usec;
-   elapsed = seconds + 1e-6 * microseconds;
-   printf("ikj version takes %f seconds to finish the computation.\n\n", elapsed); 
+    printf("Starting matrix multiplication - ikj version\n\n");
+    double at;
+    gettimeofday(&start_time, 0);
+    for (i = 0; i < NRA; i++)
+    {
+        for (k = 0; k < NCA; k++)
+        {
+            at = a[i][k];
+            for (j = 0; j < NCB; j++)
+            {
+                c1[i][j] += at * b[k][j];
+            }
+        }
+    }
+    gettimeofday(&end_time, 0);
+    seconds = end_time.tv_sec - start_time.tv_sec;
+    microseconds = end_time.tv_usec - start_time.tv_usec;
+    elapsed = seconds + 1e-6 * microseconds;
+    printf("ikj version takes %f seconds to finish the computation.\n\n", elapsed);
 
 /*** Print results ***/
 
@@ -147,23 +177,38 @@ int main (int argc, char *argv[])
 // printf("******************************************************\n");
 
 /*** check the correctness ***/
-   printf("Starting comparison\n\n");
-   int cnt= 0;
-   for (i=0; i<NRA; i++)
-      for (j=0; j<NCB; j++)
-         if((c[i][j] - c1[i][j])*(c[i][j] - c1[i][j])>1.0E-16) cnt++;
+    printf("Starting comparison\n\n");
+    int cnt = 0;
+    for (i = 0; i < NRA; i++)
+    {
+        for (j = 0; j < NCB; j++)
+        {
+            if ((c[i][j] - c1[i][j]) * (c[i][j] - c1[i][j]) > 1.0E-16)
+            {
+                cnt++;
+            }
+        }
+    }
 
-   if (cnt)
-      printf("results are not the same, the number of different elements is %d\n", cnt);
-   else 
-      printf ("Done. There are no differences!\n");
+    if (cnt)
+    {
+        printf("results are not the same, the number of different elements is %d\n", cnt);
+    }
+    else
+    {
+        printf("Done. There are no differences!\n");
+    }
 
 }
 
-void print_matrix(double** T, int rows, int cols){
-    for (int i=0; i < rows; i++){
-        for (int j=0; j < cols; j++)
+void print_matrix(double **T, int rows, int cols)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
             printf("%.2f  ", T[i][j]);
+        }
         printf("\n");
     }
     printf("\n\n");
