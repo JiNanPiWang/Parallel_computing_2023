@@ -4,18 +4,27 @@
 #include <stdio.h>
 #include <omp.h>
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
-// 用于处理输入参数，并判断是否有效
+// parseArgument用于处理输入参数，并判断是否有效
 int parseArgument(const char *arg, int *value);
+
+// init_random_matrix用于生成随机矩阵
+void init_random_matrix(double **matrix, int rows, int cols);
+
+// init_zero_matrix用于生成0矩阵
+void init_zero_matrix(double **matrix, int rows, int cols);
+
+// print_matrix用于输出矩阵
+void print_matrix(double **matrix, int rows, int cols);
+
+int matrix_mul_normal(double **A, double **B);
 
 int main(int argc, char *argv[])
 {
 	// 计算矩阵A×B，使用openmp和普通方法，并进行对比
-	int A_rows, A_cols, B_cols;
-	double *A_aux; //auxiliary 1D for 2D matrix a
-	double *B_aux; //auxiliary 1D for 2D matrix b
-	double *result_normal_aux; //auxiliary 1D for 2D matrix c
-	double *result_openmp_aux; //auxiliary 1D for 2D matrix c
+	int A_rows, A_cols, B_rows, B_cols; // B_rows = A_cols，不用输入
 	double **A; //the two-dimensional input matrix
 	double **B; //the two-dimensional input matrix
 	double **result_normal; //the resulting matrix (normal version)
@@ -39,18 +48,33 @@ int main(int argc, char *argv[])
 			printf("Invalid value for B_cols, should be an integer\n");
 			return 2;
 		}
+		B_rows = A_cols;
 		printf("A_rows = %d, A_cols = %d, B_cols = %d\n\n", A_rows, A_cols, B_cols);
 	}
 	else
 	{
-		printf("Incorrect number of arguments\n");
+		printf("Incorrect number of arguments, valid input: A_rows, A_cols, B_cols\n");
 		return 2;
-		// 执行适当的错误处理措施
 	}
+
+	// 初始化
+	A = (double **) malloc(A_rows * sizeof(double *));
+	B = (double **) malloc(B_rows * sizeof(double *));
+	init_random_matrix(A, A_rows, A_cols);
+	init_random_matrix(B, B_rows, B_cols);
+
+	result_normal = (double **) malloc(A_rows * sizeof(double *));
+	result_openmp = (double **) malloc(A_rows * sizeof(double *));
+	init_zero_matrix(result_normal, A_rows, B_cols);
+	init_zero_matrix(result_openmp, A_rows, B_cols);
+
+//	print_matrix(result_normal, A_rows, B_cols);
 
 	return 0;
 }
 
+
+// parseArgument用于处理输入参数，并判断是否有效
 int parseArgument(const char *arg, int *value) // 处理参数
 {
 	char *endptr; // 指向字符指针的参数endptr，用于指示转换过程中停止的位置。
@@ -64,4 +88,67 @@ int parseArgument(const char *arg, int *value) // 处理参数
 	}
 	*value = (int) result;
 	return 0; // 转换成功，返回成功码
+}
+
+
+// init_random_matrix用于生成随机矩阵
+void init_random_matrix(double **matrix, int rows, int cols)
+{
+	double *aux_matrix = (double *) malloc(rows * cols * sizeof(double));
+
+	for (int i = 0; i < rows; ++i)
+	{
+		matrix[i] = aux_matrix + i * cols;
+//		matrix[i] = &(aux_matrix[i * cols]);
+	}
+
+	unsigned int seed = (unsigned int) (time(NULL) ^ getpid());
+	srand(seed);
+
+	for (int i = 0; i < rows; ++i)
+	{
+		for (int j = 0; j < cols; ++j)
+		{
+			matrix[i][j] = (double) rand() / RAND_MAX;
+		}
+	}
+}
+
+
+// init_zero_matrix用于生成0矩阵
+void init_zero_matrix(double **matrix, int rows, int cols)
+{
+	double *aux_matrix = (double *) malloc(rows * cols * sizeof(double));
+
+	for (int i = 0; i < rows; ++i)
+	{
+		matrix[i] = aux_matrix + i * cols;
+//		matrix[i] = &(aux_matrix[i * cols]);
+	}
+
+	unsigned int seed = (unsigned int) (time(NULL) ^ getpid());
+	srand(seed);
+
+	for (int i = 0; i < rows; ++i)
+	{
+		for (int j = 0; j < cols; ++j)
+		{
+			matrix[i][j] = 0.0;
+		}
+	}
+}
+
+
+// print_matrix用于输出矩阵
+void print_matrix(double **matrix, int rows, int cols)
+{
+	for (int i = 0; i < rows; ++i)
+	{
+		for (int j = 0; j < cols; ++j)
+		{
+			printf("%.2f ", matrix[i][j]);
+		}
+		printf("\n");
+	}
+	printf("\n");
 }
