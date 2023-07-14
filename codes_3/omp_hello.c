@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
 	{
 		j += 2;
 		printf("    %d: ", omp_get_thread_num());
-//		int j = 2 * (i + 1);
 		printf("%d ", j);
 	}
 //  上方代码输出异常，输出的数都很大，如12 12 16 16 20等
@@ -25,11 +24,16 @@ int main(int argc, char *argv[])
 //  如多个线程都先执行了+2操作，最后再输出
 
 	printf("\n\n\n");
+	j = 0;
 	#pragma omp parallel for
 	for (int i = 0; i < 10; ++i)
 	{
-		printf("    %d: ", omp_get_thread_num());
-		int j = 2 * (i + 1);
-		printf("%d ", j);
+		#pragma omp critical
+		{
+			j += 2;
+			printf("    %d: ", omp_get_thread_num());
+			printf("%d ", j);
+		}
 	}
 }
+// 上方代码使用critical，一次只能有一个线程进入临界区
