@@ -1,5 +1,5 @@
 //
-// Created by Administrator on 2023/7/14.
+// Created by Tianyi Zhang on 2023/7/14.
 //
 #include <stdio.h>
 #include <omp.h>
@@ -19,7 +19,8 @@ void init_zero_matrix(double **matrix, int rows, int cols);
 // print_matrix用于输出矩阵
 void print_matrix(double **matrix, int rows, int cols);
 
-int matrix_mul_normal(double **A, double **B);
+// matrix_mul_normal用于计算普通矩阵乘法，并保存运算用时
+void matrix_mul_normal(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time);
 
 int main(int argc, char *argv[])
 {
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
 	double **B; //the two-dimensional input matrix
 	double **result_normal; //the resulting matrix (normal version)
 	double **result_openmp; //the resulting matrix (openmp version)
+	double elapsed_time_normal, elapsed_time_openmp;
 
 	// 处理输入参数
 	if (argc == 4)
@@ -68,7 +70,13 @@ int main(int argc, char *argv[])
 	init_zero_matrix(result_normal, A_rows, B_cols);
 	init_zero_matrix(result_openmp, A_rows, B_cols);
 
-//	print_matrix(result_normal, A_rows, B_cols);
+	matrix_mul_normal(A, A_rows, A_cols, B, B_cols,
+					  result_normal, &elapsed_time_normal);
+	printf("Normal matrix multiplication used: %.2f seconds to calculate\n", elapsed_time_normal);
+
+//	print_matrix(A, A_rows, A_cols);
+//	print_matrix(B, B_rows, B_cols);
+//	print_matrix(result_normal, result_rows, result_cols);
 
 	return 0;
 }
@@ -151,4 +159,23 @@ void print_matrix(double **matrix, int rows, int cols)
 		printf("\n");
 	}
 	printf("\n");
+}
+
+
+// matrix_mul_normal用于计算普通矩阵乘法，并保存运算用时
+void matrix_mul_normal(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time)
+{
+	double start_time = omp_get_wtime();
+	for (int i = 0; i < rows_a; ++i)
+	{
+		for (int j = 0; j < cols_b; ++j)
+		{
+			for (int k = 0; k < cols_a; k++)
+			{
+				result[i][j] += ma_a[i][k] * ma_b[k][j];
+			}
+		}
+	}
+	double end_time = omp_get_wtime();
+	*time = end_time - start_time;
 }
