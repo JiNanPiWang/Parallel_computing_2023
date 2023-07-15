@@ -20,6 +20,38 @@ void print_array(double *array, int array_len);
 // scan_normal用于计算普通扫描，并保存运算用时
 void scan_normal(double *array, int array_len, double *result, double *time);
 
+void scan_openmp(double *array, int array_len, double *result, double *time)
+{
+	double start_time = omp_get_wtime();
+	double *C;
+	C = (double *) malloc(array_len * sizeof(int));
+
+	#pragma omp parallel
+	{
+		int is_first = 1;
+		#pragma omp for
+		for (int i = 0; i < array_len; ++i)
+		{
+			if (is_first)
+				C[i] = array[i];
+			else
+				C[i] = C[i - 1] + array[i];
+			is_first = 0;
+		}
+//		for (int i = 0; i < 100; ++i)
+//		{
+////          检测效果
+//			printf("%d %d %d\n", omp_get_thread_num(), i, is_first);
+//			is_first = 1;
+//		}
+	}
+
+//	print_array(C, array_len);
+
+	double end_time = omp_get_wtime();
+	*time = end_time - start_time;
+}
+
 // 用于比较两个数组是否相等
 int compare_two_array(double *array_a, double *array_b, int array_len);
 
@@ -51,12 +83,14 @@ int main(int argc, char *argv[])
 	A = (double *) malloc(A_len * sizeof(int));
 	result_normal = (double *) malloc(A_len * sizeof(int));
 	result_openmp = (double *) malloc(A_len * sizeof(int));
+
 	init_random_array(A, A_len);
+
 	scan_normal(A, A_len, result_normal, &elapsed_time_normal);
+	scan_openmp(A, A_len, result_openmp, &elapsed_time_openmp);
 
-
-	print_array(A, A_len);
-	print_array(result_normal, result_len);
+//	print_array(A, A_len);
+//	print_array(result_normal, result_len);
 
 	return 0;
 }
