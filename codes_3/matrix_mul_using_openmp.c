@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 
 // parseArgument用于处理输入参数，并判断是否有效
 int parseArgument(const char *arg, int *value);
@@ -22,7 +23,7 @@ void print_matrix(double **matrix, int rows, int cols);
 // matrix_mul_normal用于计算普通矩阵乘法，并保存运算用时
 void matrix_mul_normal(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time);
 
-// matrix_mul_normal用于计算普通矩阵乘法，并保存运算用时
+// matrix_mul_openmp用于计算使用了openmp的矩阵乘法，并保存运算用时
 void matrix_mul_openmp(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time);
 
 // 用于比较两个矩阵是否相等
@@ -227,6 +228,8 @@ void matrix_mul_normal(double **ma_a, int rows_a, int cols_a, double **ma_b, int
 	*time = end_time - start_time;
 }
 
+
+// matrix_mul_openmp用于计算使用了openmp的矩阵乘法，并保存运算用时
 void matrix_mul_openmp(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time)
 {
 	double start_time = omp_get_wtime();
@@ -255,7 +258,7 @@ int compare_two_matrix(double **ma_a, double **ma_b, int rows, int cols)
 	{
 		for (int j = 0; j < cols; ++j)
 		{
-			if (ma_a[i][j] != ma_b[i][j])
+			if (fabs(ma_a[i][j] - ma_b[i][j]) > 1e-6)
 			{
 				return 0;
 			}
