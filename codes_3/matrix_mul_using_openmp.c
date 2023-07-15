@@ -78,37 +78,43 @@ int main(int argc, char *argv[])
 	init_zero_matrix(result_normal, A_rows, B_cols);
 	init_zero_matrix(result_openmp, A_rows, B_cols);
 
-	// 测试十次普通运算时间取平均值
-	double sum_time_normal = 0;
-	for (int i = 0; i < 10; ++i)
-	{
-		matrix_mul_normal(A, A_rows, A_cols, B, B_cols,
-		                  result_normal, &elapsed_time_normal);
-		sum_time_normal += elapsed_time_normal;
-		printf("Normal matrix multiplication %d times use : %.2f seconds to calculate\n", i + 1, elapsed_time_normal);
+//	for (int ii = 0; ii < 10; ++ii)
+//	{
+		const int run_times = 10;
+		// 测试run_times次普通运算时间取平均值
+		double sum_time_normal = 0;
+		for (int i = 0; i < run_times; ++i)
+		{
+			matrix_mul_normal(A, A_rows, A_cols, B, B_cols,
+			                  result_normal, &elapsed_time_normal);
+			sum_time_normal += elapsed_time_normal;
+			printf("Normal matrix multiplication no.%d time use : %.2f seconds to calculate\n", i + 1,
+			       elapsed_time_normal);
 
-		init_zero_matrix(result_normal, A_rows, B_cols);
-		elapsed_time_normal = 0;
-	}
-	printf("\n");
+			init_zero_matrix(result_normal, A_rows, B_cols);
+			elapsed_time_normal = 0;
+		}
+		printf("\n");
 
-	// 测试十次openmp运算时间取平均值
-	double sum_time_openmp = 0;
-	for (int i = 0; i < 10; ++i)
-	{
-		matrix_mul_openmp(A, A_rows, A_cols, B, B_cols,
-		                  result_openmp, &elapsed_time_openmp);
-		sum_time_openmp += elapsed_time_openmp;
-		printf("Normal matrix multiplication %d times use : %.2f seconds to calculate\n", i + 1, elapsed_time_openmp);
+		// 测试十次openmp运算时间取平均值
+		double sum_time_openmp = 0;
+		for (int i = 0; i < run_times; ++i)
+		{
+			matrix_mul_openmp(A, A_rows, A_cols, B, B_cols,
+			                  result_openmp, &elapsed_time_openmp);
+			sum_time_openmp += elapsed_time_openmp;
+			printf("matrix multiplication using openmp no.%d time use : %.2f seconds to calculate\n", i + 1,
+			       elapsed_time_openmp);
 
-		init_zero_matrix(result_openmp, A_rows, B_cols);
-		elapsed_time_openmp = 0;
-	}
-	printf("\n");
+			init_zero_matrix(result_openmp, A_rows, B_cols);
+			elapsed_time_openmp = 0;
+		}
+		printf("\n");
 
-	printf("Normal matrix multiplication used average %.2f seconds to calculate\n", sum_time_normal / 10);
-	printf("matrix multiplication using openmp used average  %.2f seconds to calculate\n", sum_time_openmp / 10);
-	printf("openmp is %.2f times faster than normal\n\n", sum_time_normal / sum_time_openmp);
+		printf("Normal matrix multiplication used average %.2f seconds to calculate\n", sum_time_normal / run_times);
+		printf("matrix multiplication using openmp used average  %.2f seconds to calculate\n", sum_time_openmp / run_times);
+		printf("openmp is %.2f times faster than normal\n\n", sum_time_normal / sum_time_openmp);
+//	}
 
 	if (compare_two_matrix(result_openmp, result_normal, result_rows, result_cols) == 0)
 		printf("matrix multiplication using openmp's answer is wrong.\n");
@@ -228,11 +234,9 @@ void matrix_mul_openmp(double **ma_a, int rows_a, int cols_a, double **ma_b, int
 	for (int i = 0; i < rows_a; ++i)
 	{
 //		#pragma omp parallel for
-//      慢了一点，不到四倍
 		for (int j = 0; j < cols_b; ++j)
 		{
 //			#pragma omp parallel for
-//          很慢，不到两倍
 			for (int k = 0; k < cols_a; k++)
 			{
 				result[i][j] += ma_a[i][k] * ma_b[k][j];
