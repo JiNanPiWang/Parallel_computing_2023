@@ -22,10 +22,16 @@ void print_matrix(double **matrix, int rows, int cols);
 // matrix_mul_normal用于计算普通矩阵乘法，并保存运算用时
 void matrix_mul_normal(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time);
 
+// matrix_mul_normal用于计算普通矩阵乘法，并保存运算用时
+void matrix_mul_openmp(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time);
+
+// 用于比较两个矩阵是否相等
+int compare_two_matrix(double **ma_a, double **ma_b, int rows, int cols);
+
 int main(int argc, char *argv[])
 {
 	// 计算矩阵A×B，使用openmp和普通方法，并进行对比
-	int A_rows, A_cols, B_rows, B_cols; // B_rows = A_cols，不用输入
+	int A_rows, A_cols, B_rows, B_cols, result_rows, result_cols; // B_rows = A_cols，不用输入
 	double **A; //the two-dimensional input matrix
 	double **B; //the two-dimensional input matrix
 	double **result_normal; //the resulting matrix (normal version)
@@ -51,6 +57,8 @@ int main(int argc, char *argv[])
 			return 2;
 		}
 		B_rows = A_cols;
+		result_rows = A_rows;
+		result_cols = B_cols;
 		printf("A_rows = %d, A_cols = %d, B_cols = %d\n\n", A_rows, A_cols, B_cols);
 	}
 	else
@@ -70,9 +78,42 @@ int main(int argc, char *argv[])
 	init_zero_matrix(result_normal, A_rows, B_cols);
 	init_zero_matrix(result_openmp, A_rows, B_cols);
 
-	matrix_mul_normal(A, A_rows, A_cols, B, B_cols,
-					  result_normal, &elapsed_time_normal);
-	printf("Normal matrix multiplication used: %.2f seconds to calculate\n", elapsed_time_normal);
+	// 测试十次普通运算时间取平均值
+	double sum_time_normal = 0;
+	for (int i = 0; i < 10; ++i)
+	{
+		matrix_mul_normal(A, A_rows, A_cols, B, B_cols,
+		                  result_normal, &elapsed_time_normal);
+		sum_time_normal += elapsed_time_normal;
+		printf("Normal matrix multiplication %d times use : %.2f seconds to calculate\n", i + 1, elapsed_time_normal);
+
+		init_zero_matrix(result_normal, A_rows, B_cols);
+		elapsed_time_normal = 0;
+	}
+	printf("\n");
+
+	// 测试十次openmp运算时间取平均值
+	double sum_time_openmp = 0;
+	for (int i = 0; i < 10; ++i)
+	{
+		matrix_mul_openmp(A, A_rows, A_cols, B, B_cols,
+		                  result_openmp, &elapsed_time_openmp);
+		sum_time_openmp += elapsed_time_openmp;
+		printf("Normal matrix multiplication %d times use : %.2f seconds to calculate\n", i + 1, elapsed_time_openmp);
+
+		init_zero_matrix(result_openmp, A_rows, B_cols);
+		elapsed_time_openmp = 0;
+	}
+	printf("\n");
+
+	printf("Normal matrix multiplication used average %.2f seconds to calculate\n", sum_time_normal / 10);
+	printf("matrix multiplication using openmp used average  %.2f seconds to calculate\n", sum_time_openmp / 10);
+	printf("openmp is %.2f times faster than normal\n\n", sum_time_normal / sum_time_openmp);
+
+	if (compare_two_matrix(result_openmp, result_normal, result_rows, result_cols) == 0)
+		printf("matrix multiplication using openmp's answer is wrong.\n");
+	else
+		printf("matrix multiplication using openmp's answer is right.\n");
 
 //	print_matrix(A, A_rows, A_cols);
 //	print_matrix(B, B_rows, B_cols);
@@ -178,4 +219,43 @@ void matrix_mul_normal(double **ma_a, int rows_a, int cols_a, double **ma_b, int
 	}
 	double end_time = omp_get_wtime();
 	*time = end_time - start_time;
+}
+
+void matrix_mul_openmp(double **ma_a, int rows_a, int cols_a, double **ma_b, int cols_b, double **result, double *time)
+{
+	double start_time = omp_get_wtime();
+	#pragma omp parallel for
+	for (int i = 0; i < rows_a; ++i)
+	{
+//		#pragma omp parallel for
+//      慢了一点，不到四倍
+		for (int j = 0; j < cols_b; ++j)
+		{
+//			#pragma omp parallel for
+//          很慢，不到两倍
+			for (int k = 0; k < cols_a; k++)
+			{
+				result[i][j] += ma_a[i][k] * ma_b[k][j];
+			}
+		}
+	}
+	double end_time = omp_get_wtime();
+	*time = end_time - start_time;
+}
+
+
+// 用于比较两个矩阵是否相等
+int compare_two_matrix(double **ma_a, double **ma_b, int rows, int cols)
+{
+	for (int i = 0; i < rows; ++i)
+	{
+		for (int j = 0; j < cols; ++j)
+		{
+			if (ma_a[i][j] != ma_b[i][j])
+			{
+				return 0;
+			}
+		}
+	}
+	return 1;
 }
