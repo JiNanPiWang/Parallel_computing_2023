@@ -12,6 +12,7 @@
 int parseArgument(const char *arg, int *value);
 
 // 随机初始化数组
+// 注意：数据大时，需要额外除一个大数，因为double表示大数时误差很大
 void init_random_array(double *array, int array_len);
 
 // 输出数组
@@ -63,9 +64,9 @@ int main(int argc, char *argv[])
 	printf("elapsed_time_openmp: %.2fs\n", elapsed_time_openmp);
 
 	if (!compare_two_array(result_normal, result_openmp, A_len))
-		printf("result_normal and result_openmp are not same");
+		printf("result_normal and result_openmp are not same\n");
 	else
-		printf("result_normal and result_openmp are same");
+		printf("result_normal and result_openmp are same\n");
 
 	free(A);
 	free(result_normal);
@@ -108,6 +109,7 @@ void print_array(double *array, int array_len)
 
 
 // 随机初始化数组
+// 注意：数据大时，需要额外除一个大数，因为double表示大数时误差很大
 void init_random_array(double *array, int array_len)
 {
 	unsigned int seed = (unsigned int) (time(NULL) ^ getpid());
@@ -115,7 +117,7 @@ void init_random_array(double *array, int array_len)
 
 	for (int i = 0; i < array_len; ++i)
 	{
-		array[i] = (double) rand() / RAND_MAX;
+		array[i] = (double) rand() / RAND_MAX / 1000;
 	}
 }
 
