@@ -27,7 +27,7 @@ void scan_openmp(const double *a, int a_len, double *result, double *time);
 // 用于比较两个数组是否相等
 int compare_two_array(double *array_a, double *array_b, int array_len);
 
-
+// 输入长度大于等于8
 int main(int argc, char *argv[])
 {
 	double *A;
@@ -135,11 +135,44 @@ void scan_normal(double *array, int array_len, double *result, double *time)
 	*time = end_time - start_time;
 }
 
+typedef struct thread_info
+{
+	int start_idx, end_idx;
+}thread_info;
 
 // scan_openmp用于计算openmp扫描，并保存运算用时
 void scan_openmp(const double *a, int a_len, double *result, double *time)
 {
-	const int MAX_THREAD_NUM = 100;
+	int THREAD_NUM, THREAD_LEN;
+	#pragma omp parallel
+	{
+		THREAD_NUM = omp_get_num_threads();
+		THREAD_LEN = a_len / THREAD_NUM;
+	}
+	// 初始化线程对应索引信息
+	thread_info *Thread_info;
+	Thread_info = (thread_info *) malloc(a_len * sizeof(thread_info));
+	if (a_len % THREAD_NUM == 0) // 判断是否整除来初始化第一个线程信息
+		Thread_info[0] = (thread_info){0, THREAD_LEN - 1};
+	else
+		Thread_info[0] = (thread_info){0, THREAD_LEN};
+	for (int i = 1; i < THREAD_NUM; ++i)
+	{
+		if (i < (a_len % THREAD_NUM))
+		{
+			Thread_info[i] = (thread_info)
+					{Thread_info[i - 1].end_idx + 1, Thread_info[i - 1].end_idx + THREAD_LEN + 1};
+		}
+		else
+		{
+			Thread_info[i] = (thread_info)
+					{Thread_info[i - 1].end_idx + 1, Thread_info[i - 1].end_idx + THREAD_LEN};
+		}
+	}
+//	for (int i = 0; i < THREAD_NUM; ++i)
+//	{
+//		printf("%d: %d %d\n", i, Thread_info[i].start_idx, Thread_info[i].end_idx);
+//	}
 
 	double *c, *W;
 	c = (double *) malloc(a_len * sizeof(double));
@@ -148,7 +181,7 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 	memset(W, 0, a_len * sizeof(double));
 
 	int *last_idx;
-	last_idx = (int *) malloc(MAX_THREAD_NUM * sizeof(int));
+	last_idx = (int *) malloc(THREAD_NUM * sizeof(int));
 
 	double start_time = omp_get_wtime();
 
