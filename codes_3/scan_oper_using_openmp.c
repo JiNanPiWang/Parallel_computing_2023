@@ -180,9 +180,6 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 
 	memset(W, 0, a_len * sizeof(double));
 
-	int *last_idx;
-	last_idx = (int *) malloc(THREAD_NUM * sizeof(int));
-
 	double start_time = omp_get_wtime();
 
 	#pragma omp parallel
@@ -193,18 +190,13 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 		// c: 0.31 0.46 | 0.85 1.00 | 0.29
 		// a: 0.31 0.15 | 0.85 0.15 | 0.29
 
-		int is_first = 1; // 判断当前循环是否是开始
 		#pragma omp for
 		for (int i = 0; i < a_len; ++i)
 		{
-			if (is_first) // 判断是否为分段的第一个，如果是，则为第一个 c0(c[0]) = a0
+			if (i == Thread_info[omp_get_num_threads()].start_idx) // 判断是否为分段的第一个，如果是，则为第一个 c0(c[0]) = a0
 				c[i] = a[i];
 			else // 如果不是，则为c0−1(c[1]) = c0 ⊕ a1, c0−2(c[2]) = c0−1 ⊕ a2
 				c[i] = c[i - 1] + a[i];
-
-			is_first = 0;
-			// 得到该线程对应的最后一个值
-			last_idx[omp_get_thread_num()] = i;
 //			printf("%d %.2f\n", omp_get_thread_num(), c[i]);
 //			printf("%d %d\n", omp_get_thread_num(), is_first);
 //			printf("%d %d\n", omp_get_thread_num(), i);
@@ -222,10 +214,10 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 		#pragma omp barrier
 		#pragma omp critical
 		{
-			W[last_idx[0]] = c[last_idx[0]];
+			W[Thread_info[0].end_idx] = c[Thread_info[0].end_idx];
 			for (int i = 1; i < omp_get_thread_num(); ++i)
 			{
-				W[last_idx[i]] = c[last_idx[i]] + W[last_idx[i - 1]];
+				W[Thread_info[i].end_idx] = c[Thread_info[i].end_idx] + W[Thread_info[i - 1].end_idx];
 			}
 		}
 
