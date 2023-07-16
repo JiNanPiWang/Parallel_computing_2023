@@ -27,7 +27,7 @@ void scan_openmp(const double *a, int a_len, double *result, double *time);
 // 用于比较两个数组是否相等
 int compare_two_array(double *array_a, double *array_b, int array_len);
 
-// 输入长度大于等于8
+// 适用于大批数据
 int main(int argc, char *argv[])
 {
 	double *A;
@@ -138,7 +138,7 @@ void scan_normal(double *array, int array_len, double *result, double *time)
 typedef struct thread_info
 {
 	int start_idx, end_idx;
-}thread_info;
+} thread_info;
 
 // scan_openmp用于计算openmp扫描，并保存运算用时
 void scan_openmp(const double *a, int a_len, double *result, double *time)
@@ -153,9 +153,9 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 	thread_info *Thread_info;
 	Thread_info = (thread_info *) malloc(a_len * sizeof(thread_info));
 	if (a_len % THREAD_NUM == 0) // 判断是否整除来初始化第一个线程信息
-		Thread_info[0] = (thread_info){0, THREAD_LEN - 1};
+		Thread_info[0] = (thread_info) {0, THREAD_LEN - 1};
 	else
-		Thread_info[0] = (thread_info){0, THREAD_LEN};
+		Thread_info[0] = (thread_info) {0, THREAD_LEN};
 	for (int i = 1; i < THREAD_NUM; ++i)
 	{
 		if (i < (a_len % THREAD_NUM))
@@ -190,11 +190,15 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 		// c: 0.31 0.46 | 0.85 1.00 | 0.29
 		// a: 0.31 0.15 | 0.85 0.15 | 0.29
 
+		int is_first = 1;
 		#pragma omp for
 		for (int i = 0; i < a_len; ++i)
 		{
-			if (i == Thread_info[omp_get_num_threads()].start_idx) // 判断是否为分段的第一个，如果是，则为第一个 c0(c[0]) = a0
+			if (is_first) // 判断是否为分段的第一个，如果是，则为第一个 c0(c[0]) = a0
+			{
+				is_first = 0;
 				c[i] = a[i];
+			}
 			else // 如果不是，则为c0−1(c[1]) = c0 ⊕ a1, c0−2(c[2]) = c0−1 ⊕ a2
 				c[i] = c[i - 1] + a[i];
 //			printf("%d %.2f\n", omp_get_thread_num(), c[i]);
@@ -211,6 +215,7 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 		// c: 0.31 0.46 | 0.85 1.00 | 0.29
 		// a: 0.31 0.15 | 0.85 0.15 | 0.29
 
+		// 计算 线程数 次
 		#pragma omp barrier
 		#pragma omp critical
 		{
@@ -271,6 +276,7 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 
 	free(c);
 	free(W);
+	free(Thread_info);
 
 }
 
