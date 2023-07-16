@@ -139,14 +139,22 @@ void scan_normal(double *array, int array_len, double *result, double *time)
 // scan_openmp用于计算openmp扫描，并保存运算用时
 void scan_openmp(const double *a, int a_len, double *result, double *time)
 {
+	const int MAX_THREAD_NUM = 100;
+
 	double *c, *W;
 	c = (double *) malloc(a_len * sizeof(double));
 	W = (double *) malloc(a_len * sizeof(double));
+
+	memset(W, 0, a_len * sizeof(double));
+
+	int *last_idx;
+	last_idx = (int *) malloc(MAX_THREAD_NUM * sizeof(int));
 
 	double start_time = omp_get_wtime();
 
 	#pragma omp parallel
 	{
+		// STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1 STAGE 1
 		// STAGE 1 存储分段前缀和
 
 		// c: 0.31 0.46 | 0.85 1.00 | 0.29
@@ -162,12 +170,16 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 				c[i] = c[i - 1] + a[i];
 
 			is_first = 0;
+			// 得到该线程对应的最后一个值
+			last_idx[omp_get_thread_num()] = i;
 //			printf("%d %.2f\n", omp_get_thread_num(), c[i]);
 //			printf("%d %d\n", omp_get_thread_num(), is_first);
 //			printf("%d %d\n", omp_get_thread_num(), i);
 		}
 
 
+
+		// STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2 STAGE 2
 		// STAGE 2 得到分段前缀和的前缀和，存储于W中
 
 		// W: 0.00 0.46 | 0.00 1.46 | 1.75
@@ -175,22 +187,36 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 		// a: 0.31 0.15 | 0.85 0.15 | 0.29
 
 		#pragma omp barrier
-		#pragma omp single
+		#pragma omp critical
 		{
-			// 首先获取W数组 𝑊:[0, 𝑐0−2, 𝑐3−5]，需要使用c数组
-			//     然后    𝑊:[0, 𝑐0−2, 𝑐0−5]，到边界时，W[i] = W[i - 1] + c[i]
-			double last_Wi = 0; // 用于记录W[i - 1]
-			for (int i = 0; i < a_len; ++i)
+			W[last_idx[0]] = c[last_idx[0]];
+			for (int i = 1; i < omp_get_thread_num(); ++i)
 			{
-				W[i] = 0.0; // 初始化W
-				if (i == (a_len - 1) || c[i + 1] == a[i + 1]) // 到达最末端或中间（边界）
-				{
-					W[i] = last_Wi + c[i];
-					last_Wi = W[i];
-				}
+				W[last_idx[i]] = c[last_idx[i]] + W[last_idx[i - 1]];
 			}
 		}
 
+		// 需要计算n次
+//		#pragma omp barrier
+//		#pragma omp single
+//		{
+//			// 首先获取W数组 𝑊:[0, 𝑐0−2, 𝑐3−5]，需要使用c数组
+//			//     然后    𝑊:[0, 𝑐0−2, 𝑐0−5]，到边界时，W[i] = W[i - 1] + c[i]
+//			double last_Wi = 0; // 用于记录W[i - 1]
+//			for (int i = 0; i < a_len; ++i)
+//			{
+//				W[i] = 0.0; // 初始化W
+//				if (i == (a_len - 1) || c[i + 1] == a[i + 1]) // 到达最末端或中间（边界）
+//				{
+//					W[i] = last_Wi + c[i];
+//					last_Wi = W[i];
+//				}
+//			}
+//		}
+
+
+
+		// STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3 STAGE 3
 		// STAGE 3 利用c和W求得结果，存入result
 		int first_i = -1;
 		double last_Wi;
