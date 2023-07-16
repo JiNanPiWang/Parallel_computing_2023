@@ -68,13 +68,13 @@ int main(int argc, char *argv[])
 	else
 		printf("result_normal and result_openmp are same\n");
 
-	free(A);
-	free(result_normal);
-	free(result_openmp);
-
 
 //	print_array(A, A_len);
 //	print_array(result_normal, result_len);
+
+	free(A);
+	free(result_normal);
+	free(result_openmp);
 
 	return 0;
 }
@@ -102,7 +102,7 @@ void print_array(double *array, int array_len)
 {
 	for (int i = 0; i < array_len; ++i)
 	{
-		printf("%.2f ", array[i]);
+		printf("%.6f ", array[i]);
 	}
 	printf("\n");
 }
@@ -163,6 +163,7 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 
 			is_first = 0;
 //			printf("%d %.2f\n", omp_get_thread_num(), c[i]);
+//			printf("%d %d\n", omp_get_thread_num(), is_first);
 //			printf("%d %d\n", omp_get_thread_num(), i);
 		}
 
@@ -179,8 +180,7 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 			// 首先获取W数组 𝑊:[0, 𝑐0−2, 𝑐3−5]，需要使用c数组
 			//     然后    𝑊:[0, 𝑐0−2, 𝑐0−5]，到边界时，W[i] = W[i - 1] + c[i]
 			double last_Wi = 0; // 用于记录W[i - 1]
-			W[0] = 0.0; // 初始化W
-			for (int i = 1; i < a_len; ++i)
+			for (int i = 0; i < a_len; ++i)
 			{
 				W[i] = 0.0; // 初始化W
 				if (i == (a_len - 1) || c[i + 1] == a[i + 1]) // 到达最末端或中间（边界）
@@ -209,9 +209,6 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 	double end_time = omp_get_wtime();
 	*time = end_time - start_time;
 
-	free(c);
-	free(W);
-
 //	printf("r: ");
 //	print_array(result, a_len);
 //	printf("W: ");
@@ -220,6 +217,9 @@ void scan_openmp(const double *a, int a_len, double *result, double *time)
 //	print_array(c, a_len);
 //	printf("a: ");
 //	print_array(a, a_len);
+
+	free(c);
+	free(W);
 
 }
 
