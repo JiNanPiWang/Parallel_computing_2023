@@ -20,33 +20,69 @@ void print_array(double *array, int array_len);
 // scan_normal用于计算普通扫描，并保存运算用时
 void scan_normal(double *array, int array_len, double *result, double *time);
 
-void scan_openmp(double *array, int array_len, double *result, double *time)
+void scan_openmp(double *a, int a_len, double *result, double *time)
 {
 	double start_time = omp_get_wtime();
-	double *C;
-	C = (double *) malloc(array_len * sizeof(int));
+	double *c, *W;
+	c = (double *) malloc(a_len * sizeof(double));
+	W = (double *) malloc(a_len * sizeof(double));
 
 	#pragma omp parallel
 	{
-		int is_first = 1;
+		// STAGE 1 存储分段前缀和
+		int is_first = 1; // 判断当前循环是否是开始
 		#pragma omp for
-		for (int i = 0; i < array_len; ++i)
+		for (int i = 0; i < a_len; ++i)
 		{
-			if (is_first)
-				C[i] = array[i];
-			else
-				C[i] = C[i - 1] + array[i];
+			if (is_first) // 判断是否为分段的第一个，如果是，则为第一个 c0(c[0]) = a0
+				c[i] = a[i];
+			else // 如果不是，则为c0−1(c[1]) = c0 ⊕ a1, c0−2(c[2]) = c0−1 ⊕ a2
+				c[i] = c[i - 1] + a[i];
+
+			// 还需要判断是不是最后一个
+
 			is_first = 0;
+			printf("%d %.2f\n", omp_get_thread_num(), c[i]);
 		}
+
+		// STAGE 2 得到分段前缀和的前缀和，存储于W中
+		#pragma omp barrier
+		#pragma omp single
+		{
+			// 首先获取W数组 𝑊:[0, 𝑐0−2, 𝑐3−5]，需要使用c数组
+			//     然后    𝑊:[0, 𝑐0−2, 𝑐0−5]，到边界时，W[i] = W[i - 1] + c[i]
+			double last_Wi = 0; // 用于记录W[i - 1]
+			W[0] = 0.0; // 初始化W
+			for (int i = 1; i < a_len; ++i)
+			{
+				W[i] = 0.0; // 初始化W
+				if (i == (a_len - 1) || c[i + 1] == a[i + 1]) // 到达最末端或中间的边界
+				{
+//					printf("%d ", i);
+					W[i] = last_Wi + c[i];
+					last_Wi = W[i];
+				}
+			}
+		}
+
+		// STAGE 3
+
+
 //		for (int i = 0; i < 100; ++i)
 //		{
 ////          检测效果
 //			printf("%d %d %d\n", omp_get_thread_num(), i, is_first);
 //			is_first = 1;
 //		}
+
 	}
 
-//	print_array(C, array_len);
+			printf("W: ");
+			print_array(W, a_len);
+	printf("c: ");
+	print_array(c, a_len);
+	printf("a: ");
+	print_array(a, a_len);
 
 	double end_time = omp_get_wtime();
 	*time = end_time - start_time;
@@ -80,9 +116,9 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
-	A = (double *) malloc(A_len * sizeof(int));
-	result_normal = (double *) malloc(A_len * sizeof(int));
-	result_openmp = (double *) malloc(A_len * sizeof(int));
+	A = (double *) malloc(A_len * sizeof(double));
+	result_normal = (double *) malloc(A_len * sizeof(double));
+	result_openmp = (double *) malloc(A_len * sizeof(double));
 
 	init_random_array(A, A_len);
 
