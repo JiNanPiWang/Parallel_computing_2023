@@ -20,73 +20,8 @@ void print_array(double *array, int array_len);
 // scan_normal用于计算普通扫描，并保存运算用时
 void scan_normal(double *array, int array_len, double *result, double *time);
 
-void scan_openmp(double *a, int a_len, double *result, double *time)
-{
-	double start_time = omp_get_wtime();
-	double *c, *W;
-	c = (double *) malloc(a_len * sizeof(double));
-	W = (double *) malloc(a_len * sizeof(double));
-
-	#pragma omp parallel
-	{
-		// STAGE 1 存储分段前缀和
-		int is_first = 1; // 判断当前循环是否是开始
-		#pragma omp for
-		for (int i = 0; i < a_len; ++i)
-		{
-			if (is_first) // 判断是否为分段的第一个，如果是，则为第一个 c0(c[0]) = a0
-				c[i] = a[i];
-			else // 如果不是，则为c0−1(c[1]) = c0 ⊕ a1, c0−2(c[2]) = c0−1 ⊕ a2
-				c[i] = c[i - 1] + a[i];
-
-			// 还需要判断是不是最后一个
-
-			is_first = 0;
-			printf("%d %.2f\n", omp_get_thread_num(), c[i]);
-		}
-
-		// STAGE 2 得到分段前缀和的前缀和，存储于W中
-		#pragma omp barrier
-		#pragma omp single
-		{
-			// 首先获取W数组 𝑊:[0, 𝑐0−2, 𝑐3−5]，需要使用c数组
-			//     然后    𝑊:[0, 𝑐0−2, 𝑐0−5]，到边界时，W[i] = W[i - 1] + c[i]
-			double last_Wi = 0; // 用于记录W[i - 1]
-			W[0] = 0.0; // 初始化W
-			for (int i = 1; i < a_len; ++i)
-			{
-				W[i] = 0.0; // 初始化W
-				if (i == (a_len - 1) || c[i + 1] == a[i + 1]) // 到达最末端或中间的边界
-				{
-//					printf("%d ", i);
-					W[i] = last_Wi + c[i];
-					last_Wi = W[i];
-				}
-			}
-		}
-
-		// STAGE 3
-
-
-//		for (int i = 0; i < 100; ++i)
-//		{
-////          检测效果
-//			printf("%d %d %d\n", omp_get_thread_num(), i, is_first);
-//			is_first = 1;
-//		}
-
-	}
-
-			printf("W: ");
-			print_array(W, a_len);
-	printf("c: ");
-	print_array(c, a_len);
-	printf("a: ");
-	print_array(a, a_len);
-
-	double end_time = omp_get_wtime();
-	*time = end_time - start_time;
-}
+// scan_openmp用于计算openmp扫描，并保存运算用时
+void scan_openmp(const double *a, int a_len, double *result, double *time);
 
 // 用于比较两个数组是否相等
 int compare_two_array(double *array_a, double *array_b, int array_len);
@@ -123,7 +58,19 @@ int main(int argc, char *argv[])
 	init_random_array(A, A_len);
 
 	scan_normal(A, A_len, result_normal, &elapsed_time_normal);
+	printf("elapsed_time_normal: %.2fs\n", elapsed_time_normal);
 	scan_openmp(A, A_len, result_openmp, &elapsed_time_openmp);
+	printf("elapsed_time_openmp: %.2fs\n", elapsed_time_openmp);
+
+	if (!compare_two_array(result_normal, result_openmp, A_len))
+		printf("result_normal and result_openmp are not same");
+	else
+		printf("result_normal and result_openmp are same");
+
+	free(A);
+	free(result_normal);
+	free(result_openmp);
+
 
 //	print_array(A, A_len);
 //	print_array(result_normal, result_len);
@@ -168,7 +115,7 @@ void init_random_array(double *array, int array_len)
 
 	for (int i = 0; i < array_len; ++i)
 	{
-		array[i] = (double) rand() / RAND_MAX;;
+		array[i] = (double) rand() / RAND_MAX;
 	}
 }
 
@@ -184,6 +131,94 @@ void scan_normal(double *array, int array_len, double *result, double *time)
 	}
 	double end_time = omp_get_wtime();
 	*time = end_time - start_time;
+}
+
+
+// scan_openmp用于计算openmp扫描，并保存运算用时
+void scan_openmp(const double *a, int a_len, double *result, double *time)
+{
+	double *c, *W;
+	c = (double *) malloc(a_len * sizeof(double));
+	W = (double *) malloc(a_len * sizeof(double));
+
+	double start_time = omp_get_wtime();
+
+	#pragma omp parallel
+	{
+		// STAGE 1 存储分段前缀和
+
+		// c: 0.31 0.46 | 0.85 1.00 | 0.29
+		// a: 0.31 0.15 | 0.85 0.15 | 0.29
+
+		int is_first = 1; // 判断当前循环是否是开始
+		#pragma omp for
+		for (int i = 0; i < a_len; ++i)
+		{
+			if (is_first) // 判断是否为分段的第一个，如果是，则为第一个 c0(c[0]) = a0
+				c[i] = a[i];
+			else // 如果不是，则为c0−1(c[1]) = c0 ⊕ a1, c0−2(c[2]) = c0−1 ⊕ a2
+				c[i] = c[i - 1] + a[i];
+
+			is_first = 0;
+//			printf("%d %.2f\n", omp_get_thread_num(), c[i]);
+//			printf("%d %d\n", omp_get_thread_num(), i);
+		}
+
+
+		// STAGE 2 得到分段前缀和的前缀和，存储于W中
+
+		// W: 0.00 0.46 | 0.00 1.46 | 1.75
+		// c: 0.31 0.46 | 0.85 1.00 | 0.29
+		// a: 0.31 0.15 | 0.85 0.15 | 0.29
+
+		#pragma omp barrier
+		#pragma omp single
+		{
+			// 首先获取W数组 𝑊:[0, 𝑐0−2, 𝑐3−5]，需要使用c数组
+			//     然后    𝑊:[0, 𝑐0−2, 𝑐0−5]，到边界时，W[i] = W[i - 1] + c[i]
+			double last_Wi = 0; // 用于记录W[i - 1]
+			W[0] = 0.0; // 初始化W
+			for (int i = 1; i < a_len; ++i)
+			{
+				W[i] = 0.0; // 初始化W
+				if (i == (a_len - 1) || c[i + 1] == a[i + 1]) // 到达最末端或中间（边界）
+				{
+					W[i] = last_Wi + c[i];
+					last_Wi = W[i];
+				}
+			}
+		}
+
+		// STAGE 3 利用c和W求得结果，存入result
+		int first_i = -1;
+		double last_Wi;
+		#pragma omp for
+		for (int i = 0; i < a_len; ++i)
+		{
+			if (first_i == -1)
+				first_i = i;
+			if (first_i != 0)
+				last_Wi = W[first_i - 1];
+			else
+				last_Wi = 0.0;
+			result[i] = c[i] + last_Wi;
+		}
+	}
+	double end_time = omp_get_wtime();
+	*time = end_time - start_time;
+
+	free(c);
+	free(W);
+
+//	printf("r: ");
+//	print_array(result, a_len);
+//	printf("W: ");
+//	print_array(W, a_len);
+//	printf("c: ");
+//	print_array(c, a_len);
+//	printf("a: ");
+//	print_array(a, a_len);
+
 }
 
 
