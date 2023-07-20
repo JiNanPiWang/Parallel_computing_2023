@@ -14,6 +14,7 @@ add_subdirectory(codes_1)
 add_subdirectory(codes_2)
 add_subdirectory(codes_3)
 add_subdirectory(codes_4)
+add_subdirectory(codes_5)
 
 # 设置输出目录
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

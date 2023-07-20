@@ -12,5 +12,5 @@ add_executable(codes_1
 #        matvec_2.c
 #        mpi_hello.c
         omp_hello.c
-        )
+        ../codes_5/test.c)
 
