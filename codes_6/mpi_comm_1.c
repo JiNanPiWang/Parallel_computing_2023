@@ -25,29 +25,42 @@ int main(int argc, char **argv)
 	int myid, numprocs;
 	int token = 0; //token initialized to 0
 
+	int *l;
+	l = (int *) malloc(100 * sizeof(int));
+
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
 	if (numprocs == 1)
-	{//only one process, no communication
+	{
+		//only one process, no communication
 		printf("I'm the lonely process with id = %d :(\n", myid);
 		MPI_Finalize();
 		return 0;
 	}
+	else
+	{
+		if (myid == 0)
+			printf("Processes num: %d\n", numprocs);
+	}
+
+	int recv_id;
+	MPI_Send(&myid, 1, MPI_INT, (myid + numprocs - 1) % numprocs, 0, MPI_COMM_WORLD);
+	MPI_Recv(&recv_id, 1, MPI_INT, (myid + 1) % numprocs, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	MPI_Send(&recv_id, 1, MPI_INT, (myid + numprocs - 1) % numprocs, 0, MPI_COMM_WORLD);
+
+	MPI_Gather(&recv_id, 1, MPI_INT, l + myid, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+//	printf("NO.%d: left: %d right: %d | l[i]: %d\n", myid, (myid + numprocs - 1) % numprocs, (myid + 1) % numprocs, l[myid]);
 
 	if (myid == 0)
 	{
-		token = 1; //set token to 1 and send
-		printf("This is process %i from %i - I have set the token = %d.\n", myid, numprocs, token);
-		MPI_Send(&token, 1, MPI_INT, numprocs - 1, 1, MPI_COMM_WORLD);
-		MPI_Recv(&token, 1, MPI_INT, 1, 1, MPI_COMM_WORLD, &status);
-	}
-	else
-	{
-		MPI_Recv(&token, 1, MPI_INT, (myid + 1) % numprocs, 1, MPI_COMM_WORLD, &status);
-		printf("This is process %i from %i - I have received the token = %d.\n", myid, numprocs, token);
-		MPI_Send(&token, 1, MPI_INT, myid - 1, 1, MPI_COMM_WORLD);
+		for (int i = 0; i < numprocs; ++i)
+		{
+			printf("No.%d process receives ID: %d\n", i, l[i]);
+		}
 	}
 
 	MPI_Finalize();
